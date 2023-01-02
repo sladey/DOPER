@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import logging
+from doper.utility import plot_streams
 
 def plot_dynamic_nodes(df, parameter, plotFile = None):
     '''
