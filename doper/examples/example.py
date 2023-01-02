@@ -85,8 +85,24 @@ def default_parameter():
     parameter['objective']['weight_load_shed'] = 1 # Weight of shed load costs ($/kWh)  in objective
     return parameter
 
+def parameter_home(parameter=None):
+    if parameter is None:
+        # if no parameter given, load default
+        parameter = default_parameter()
+    
+    parameter['site']['customer'] = None
+    parameter['tariff']['energy'] = {0:0.11, 1:0.16, 2:0.38} # $/kWh for periods 0-offpeak, 1-midpeak, 2-onpeak
+    parameter['tariff']['demand'] = {} # $/kW for periods 0-offpeak, 1-midpeak, 2-onpeak
+    parameter['tariff']['demand_coincident'] = 0 # $/kW for coincident
+    parameter['tariff']['export'] = {0:0.05} # $/kWh for periods 0-offpeak, 1-midpeak, 2-onpeak  
 
-def parameter_add_battery(parameter=None):
+    parameter['site']['input_timezone'] = +11 # Timezone of inputs (in hourly offset from UTC)
+    parameter['site']['local_timezone'] = 'Australia/Sydney' # Local timezone of tariff (as Python timezone string)   
+
+    return parameter
+
+
+def parameter_add_battery(parameter=None, type=None, bat_name=None):
     if parameter is None:
         # if no parameter given, load default
         parameter = default_parameter()
@@ -94,29 +110,56 @@ def parameter_add_battery(parameter=None):
     # enable gensets
     parameter['system']['battery'] = True
     
-    # Add genset options
-    parameter['batteries'] = [
-        {
-         'name':'libat01',
-        'capacity': 200,
-         'degradation_endoflife': 80,
-         'degradation_replacementcost': 6000.0,
-         'efficiency_charging': 0.96,
-         'efficiency_discharging': 0.96,
-         'nominal_V':  400,
-         'power_charge': 50,
-         'power_discharge': 50,
-         'maxS': 50,
-         'self_discharging': 0.0,
-          'soc_final': None,
-         'soc_initial': 0.65,
-         'soc_max': 1,
-         'soc_min': 0.2,
-         # 'temperature_initial': 22.0,
-         'thermal_C': 100000.0,
-         'thermal_R': 0.01
-        }
-    ]
+    if parameter.get('batteries') is None:
+        parameter['batteries'] = []
+    
+    if type is None:
+        # Add genset options
+        parameter['batteries'] = [
+            {
+            'name':'libat01',
+            'capacity': 200,
+            'degradation_endoflife': 80,
+            'degradation_replacementcost': 6000.0,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'nominal_V':  400,
+            'power_charge': 50,
+            'power_discharge': 50,
+            'maxS': 50,
+            'self_discharging': 0.0,
+            'soc_final': None,
+            'soc_initial': 0.65,
+            'soc_max': 1,
+            'soc_min': 0.2,
+            # 'temperature_initial': 22.0,
+            'thermal_C': 100000.0,
+            'thermal_R': 0.01
+            }
+        ]    
+    elif type == 'PW2':
+        parameter['batteries'].extend([
+            {
+            'name': bat_name,
+            'capacity': 14,
+            'degradation_endoflife': 80,
+            'degradation_replacementcost': 10000,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'nominal_V':  230,
+            'power_charge': 5,
+            'power_discharge': 5,
+            'maxS': 5,
+            'self_discharging': 0.0,
+            'soc_final': 0.1,
+            'soc_initial': 0.9,
+            'soc_max': 1,
+            'soc_min': 0.1,
+            # 'temperature_initial': 22.0,
+            'thermal_C': 100000.0,
+            'thermal_R': 0.01
+            }   
+        ])
     
     return parameter
 
@@ -185,7 +228,7 @@ def parameter_add_loadcontrol(parameter=None):
     return parameter
 
 
-def parameter_add_evfleet(parameter=None):
+def parameter_add_evfleet(parameter=None, type=None):
     if parameter is None:
         # if no parameter given, load default
         parameter = default_parameter()
@@ -193,51 +236,72 @@ def parameter_add_evfleet(parameter=None):
     # enable gensets
     parameter['system']['battery'] = True
     
+    if parameter.get('batteries') is None:
+        parameter['batteries'] = []
+
     # Add genset options
-    parameter['batteries'] = [
-        {
-         'name': 'EV1',
-        'capacity': 24,
-         'efficiency_charging': 0.96,
-         'efficiency_discharging': 0.96,
-         'power_charge': 15,
-         'power_discharge': 15,
-         'maxS': 15,
-         'self_discharging': 0.003,
-         # 'soc_final': 0.5,
-         'soc_initial': 0.75,
-         'soc_max': 1,
-         'soc_min': 0
-        },
-        {
-        'name': 'EV2',
-        'capacity': 24,
-         'efficiency_charging': 0.96,
-         'efficiency_discharging': 0.96,
-         'power_charge': 15,
-         'power_discharge': 15,
-         'maxS': 15,
-         'self_discharging': 0.003,
-         # 'soc_final': 0.5,
-         'soc_initial': 0.80,
-         'soc_max': 1,
-         'soc_min': 0
-        },
-        {
-        'name': 'EV3',
-        'capacity': 54,
-         'efficiency_charging': 0.96,
-         'efficiency_discharging': 0.96,
-         'power_charge': 30,
-         'power_discharge': 30,
-         'maxS': 30,
-         'self_discharging': 0.003,
-         # 'soc_final': 0.5,
-         'soc_initial': 0.75,
-         'soc_max': 1,
-         'soc_min': 0
-        }
-    ]
+    if type is None:
+        parameter['batteries'].extend([
+            {
+            'name': 'EV1',
+            'capacity': 24,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'power_charge': 15,
+            'power_discharge': 15,
+            'maxS': 15,
+            'self_discharging': 0.003,
+            # 'soc_final': 0.5,
+            'soc_initial': 0.75,
+            'soc_max': 1,
+            'soc_min': 0
+            },
+            {
+            'name': 'EV2',
+            'capacity': 24,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'power_charge': 15,
+            'power_discharge': 15,
+            'maxS': 15,
+            'self_discharging': 0.003,
+            # 'soc_final': 0.5,
+            'soc_initial': 0.80,
+            'soc_max': 1,
+            'soc_min': 0
+            },
+            {
+            'name': 'EV3',
+            'capacity': 54,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'power_charge': 30,
+            'power_discharge': 30,
+            'maxS': 30,
+            'self_discharging': 0.003,
+            # 'soc_final': 0.5,
+            'soc_initial': 0.75,
+            'soc_max': 1,
+            'soc_min': 0
+            }
+        ])
+    elif type == 'Tesla':
+        parameter['batteries'].extend([
+            {
+            'name': 'Tesla',
+            'capacity': 100,
+            'efficiency_charging': 0.96,
+            'efficiency_discharging': 0.96,
+            'power_charge': 21,
+            'power_discharge': 15,
+            'maxS': 15,
+            'self_discharging': 0.003,
+            # 'soc_final': 0.5,
+            'soc_initial': 0.75,
+            'soc_max': 1,
+            'soc_min': 0.05
+            }
+        ])
 
     return parameter
 
@@ -1325,7 +1389,7 @@ def parameter_add_loadcontrol_multinode_test(parameter=None):
 # Timeseries Input Example Creation Funcs
     
 
-def ts_inputs(parameter={}, load='Flexlab', scale_load=4, scale_pv=4):
+def ts_inputs(parameter={}, load='Flexlab', scale_load=4, scale_pv=4, tariff=None):
     #scale = 1
     #scale = 30 
     if load == 'Flexlab':
@@ -1345,14 +1409,26 @@ def ts_inputs(parameter={}, load='Flexlab', scale_load=4, scale_pv=4):
                                5.4,  5.4,  5.4,  5.3,  5.3,  5.2,  4.8,  3.9,  3.1,  2.9,  2.8,
                                2.8,  2.8]
         data['load_demand'] = data['load_demand']/data['load_demand'].max()
+    elif load == 'Home':
+        data = pd.DataFrame(index=pd.date_range(start='2019-01-01 00:00', end='2019-01-01 23:00', freq='H'))
+        data['load_demand'] = [1,  1,  1,  1,  1 ,  1.5,  3 ,  4.0,  4.0,  3,  3,
+                               3.5,  3.5,  4.0,  4.5,  5.0,  5.5,  6.0,  6.0,  5.0,  4.5,  3.5,
+                               2.0,  2.0]
+        data['load_demand'] = data['load_demand']/data['load_demand'].max()
     # Scale Load data
     data['load_demand'] = data['load_demand'] * scale_load
     # Mode of OAT
     data['oat'] = np.sin(data.index.view(np.int64)/(1e12*np.pi*4))*3 + 22
     # Makeup Tariff
     data['tariff_energy_map'] = 0
-    data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=8) & (data.index.hour<22), 1)
-    data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=12) & (data.index.hour<18), 2)
+
+    if load == 'Home':
+        data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=7) & (data.index.hour<22), 1)
+        data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=14) & (data.index.hour<20), 2)
+    else:
+        data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=8) & (data.index.hour<22), 1)
+        data['tariff_energy_map'] = data['tariff_energy_map'].mask((data.index.hour>=12) & (data.index.hour<18), 2)
+
     data['tariff_power_map'] = data['tariff_energy_map'] # Apply same periods to demand charge
     data['tariff_energy_export_map'] = 0
     data['generation_pv'] = 0
@@ -1362,7 +1438,6 @@ def ts_inputs(parameter={}, load='Flexlab', scale_load=4, scale_pv=4):
     data['tariff_regdn'] = data['tariff_power_map'] * 0.01 + 0.01
     data['battery_reg'] = 0
     
-    data['date_time'] = data.index
     # Resample
     if True:
         data = data.resample('5T').asfreq()
@@ -1374,18 +1449,19 @@ def ts_inputs(parameter={}, load='Flexlab', scale_load=4, scale_pv=4):
         data = data.loc['2019-01-01 00:00:00':'2019-01-02 00:00:00']
     else:
         data = data.loc['2019-01-01 00:00:00':'2019-01-02 00:00:00']
+
+    data['date_time'] = data.index    
     #data.index = data.index.astype(int)/1000000000
     #data = data.reset_index(drop=True)
     
     # input timeseries indicating grid availability
     data['grid_available'] = 1
-    data['fuel_available'] = 1
+    data['fuel_available'] = 0
     
     # input timeseries indicating grid availability
     data['grid_co2_intensity'] = 0.202 #kg/kWh
     return data
     
-    return data
 
 def ts_inputs_ev_schedule(parameter, data):
     
@@ -1398,6 +1474,28 @@ def ts_inputs_ev_schedule(parameter, data):
         data['battery_{!s}_demand'.format(b)] = -1 * (data['battery_{!s}_avail'.format(b)] - 1) \
                                                 * np.random.uniform(low=0.5, high=2.5, size=len(data.index))
     return data
+
+def ts_input_ev_home_usage(parameter, data):
+    # assume a single EV
+    # assume 30km driven per day
+    # assume 211 Wh/km for energy consumption = 6.3kWh per day usage
+    # assume vehicle can be charged overnight and 2 hours in the middle of the day.
+    # assume it is driven in the morning and the arvo
+    for b in range(len(parameter['batteries'])):
+        
+        if parameter['batteries'][b]['name'] == 'Tesla':
+            data['battery_{!s}_avail'.format(b)] = 1
+            data['battery_{!s}_avail'.format(b)] = data['battery_{!s}_avail'.format(b)].mask((data.index.hour>=7) & (data.index.hour<11), 0)
+            data['battery_{!s}_avail'.format(b)] = data['battery_{!s}_avail'.format(b)].mask((data.index.hour>=15) & (data.index.hour<19), 0)
+
+            # number of driving hours 
+            hrs = 4 + 4
+            kmhr = 30/hrs
+            np.random.seed(b+15)
+            data['battery_{!s}_demand'.format(b)] = -1 * (data['battery_{!s}_avail'.format(b)] - 1) \
+                                                * np.random.uniform(low=kmhr - 2, high=kmhr + 2, size=len(data.index))
+    return data
+
 
     
 def ts_inputs_offgrid(parameter):
@@ -1624,10 +1722,10 @@ def ts_inputs_multinode_pf(parameter, data=None):
 
 
 if __name__ == '__main__':
-    #parameter = default_parameter()
-    parameter = parameter_add_evfleet()
+    parameter = parameter_home()
 
-    #data = ts_inputs(parameter)
-    data = ts_inputs_ev_schedule(parameter)
-    
-    # print(data.index)
+    parameter = parameter_add_battery(parameter, 'PW2', 'pw2-1')
+    parameter = parameter_add_battery(parameter, 'PW2', 'pw2-2')
+    parameter = parameter_add_evfleet(parameter, 'Tesla')
+    data = ts_inputs(parameter, load='Home', scale_load=10, scale_pv=15)
+    data = ts_input_ev_home_usage(parameter, data)
