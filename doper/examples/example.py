@@ -297,7 +297,7 @@ def parameter_add_evfleet(parameter=None, type=None):
             'maxS': 15,
             'self_discharging': 0.003,
             # 'soc_final': 0.5,
-            'soc_initial': 0.75,
+            'soc_initial': 0.2,
             'soc_max': 1,
             'soc_min': 0.05
             }
@@ -1494,6 +1494,8 @@ def ts_input_ev_home_usage(parameter, data):
             np.random.seed(b+15)
             data['battery_{!s}_demand'.format(b)] = -1 * (data['battery_{!s}_avail'.format(b)] - 1) \
                                                 * np.random.uniform(low=kmhr - 2, high=kmhr + 2, size=len(data.index))
+            data['battery_{!s}_demand'.format('Tesla')] = data['battery_{!s}_demand'.format(b)]
+            data['battery_{!s}_avail'.format('Tesla')] = data['battery_{!s}_avail'.format(b)]                                                
     return data
 
 
